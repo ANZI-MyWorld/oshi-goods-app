@@ -1,0 +1,64 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>推しグッズ帳</title><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#ff8fb8"><link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{--p:#ff8fb8;--pd:#e8669a;--bg:#fff5f9;--card:#fff;--t:#4a3a42;--m:#9a8a92}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,"Hiragino Maru Gothic ProN",sans-serif;background:var(--bg);color:var(--t);padding-bottom:80px}
+header{position:sticky;top:0;background:var(--p);color:#fff;padding:12px 16px;padding-top:calc(12px + env(safe-area-inset-top));z-index:5;display:flex;align-items:center;gap:8px}
+header h1{font-size:18px;margin:0;flex:1}header button{background:rgba(255,255,255,.25);color:#fff;border:0;border-radius:20px;padding:6px 12px;font-size:13px}
+main{padding:12px;max-width:640px;margin:auto}
+.bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+input,select,textarea{width:100%;padding:10px;border:1.5px solid #f3d3e0;border-radius:12px;font-size:16px;background:#fff;color:var(--t)}
+.bar select,.bar input{flex:1;min-width:120px}
+.sum{font-size:13px;color:var(--m);margin:6px 2px}
+h2.g{font-size:14px;color:var(--pd);margin:16px 4px 6px;border-bottom:2px dotted #f3c3d6;padding-bottom:4px}
+.item{display:flex;gap:10px;background:var(--card);border-radius:16px;padding:10px;margin-bottom:8px;box-shadow:0 2px 6px rgba(232,102,154,.1)}
+.item img,.ph{width:64px;height:64px;border-radius:12px;object-fit:cover;background:#ffe3ee;flex:none;display:flex;align-items:center;justify-content:center;font-size:26px}
+.item .b{flex:1;min-width:0}.item .n{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tag{display:inline-block;font-size:11px;background:#ffe3ee;color:var(--pd);border-radius:10px;padding:2px 8px;margin:3px 3px 0 0}.tag.s{background:#e8f0ff;color:#5a74c9}
+.q{font-weight:700;color:var(--pd);align-self:center;font-size:18px}
+.fab{position:fixed;right:20px;bottom:calc(20px + env(safe-area-inset-bottom));width:60px;height:60px;border-radius:50%;background:var(--pd);color:#fff;font-size:32px;border:0;box-shadow:0 4px 12px rgba(232,102,154,.4)}
+.modal{position:fixed;inset:0;background:rgba(74,58,66,.4);display:none;z-index:10;overflow:auto}.modal.on{display:block}
+.sheet{background:var(--bg);margin:20px auto;max-width:600px;border-radius:20px;padding:16px;width:calc(100% - 20px)}
+.sheet h3{margin:0 0 12px;color:var(--pd)}label{display:block;font-size:13px;color:var(--m);margin:10px 0 4px}
+.row{display:flex;gap:6px;align-items:center}.row input{flex:1}
+.btn{border:0;border-radius:14px;padding:12px 16px;font-size:15px;background:var(--pd);color:#fff;font-weight:700}.btn.g{background:#eee;color:var(--t)}.btn.r{background:#f06a6a}
+.acts{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.acts .btn{flex:1}
+#prev{max-width:100%;max-height:200px;border-radius:12px;margin-top:6px;display:none}
+.empty{text-align:center;color:var(--m);padding:40px 10px}
+.li{display:flex;gap:6px;margin-bottom:6px}.li input{flex:1}
+</style></head><body>
+<header><h1>🌟 推しグッズ帳</h1><button id="mBtn">メニュー</button></header>
+<main>
+<div class="bar"><input id="q" placeholder="🔍 検索"></div>
+<div class="bar"><select id="fg"></select><select id="fs"></select><select id="grp"><option value="genre">ジャンル別</option><option value="series">シリーズ別</option><option value="none">まとめない</option></select></div>
+<div class="sum" id="sum"></div><div id="list"></div>
+</main>
+<button class="fab" id="add">＋</button>
+<div class="modal" id="mEdit"><div class="sheet">
+<h3 id="eT">グッズを登録</h3><input type="hidden" id="eId">
+<label>名前 *</label><input id="eName">
+<label>ジャンル</label><input id="eGenre" list="dlG" placeholder="例：アクスタ"><datalist id="dlG"></datalist>
+<label>シリーズ</label><input id="eSeries" list="dlS" placeholder="例：ポップアップA"><datalist id="dlS"></datalist>
+<label>サイズ（cm）横 × 縦 × 奥行き</label><div class="row"><input id="eW" type="number" step="0.1" inputmode="decimal" placeholder="横">×<input id="eH" type="number" step="0.1" inputmode="decimal" placeholder="縦">×<input id="eD" type="number" step="0.1" inputmode="decimal" placeholder="奥(任意)"></div>
+<label>個数</label><div class="row"><button class="btn g" type="button" id="qm">−</button><input id="eQty" type="number" min="0" value="1" inputmode="numeric" style="text-align:center"><button class="btn g" type="button" id="qp">＋</button></div>
+<label>写真</label><input type="file" id="eFile" accept="image/*"><img id="prev"><button class="btn g" id="rmPh" type="button" style="display:none;margin-top:6px">写真を外す</button>
+<label>URL</label><input id="eUrl" type="url" placeholder="https://">
+<label>メモ</label><textarea id="eMemo" rows="3"></textarea>
+<div class="acts"><button class="btn g" id="eCancel">キャンセル</button><button class="btn r" id="eDel">削除</button><button class="btn" id="eSave">保存</button></div>
+</div></div>
+<div class="modal" id="mMenu"><div class="sheet"><h3>メニュー</h3>
+<div class="acts" style="flex-direction:column">
+<button class="btn" id="bAI">🤖 AIから取り込み</button><button class="btn g" id="bList">ジャンル・シリーズの編集</button>
+<button class="btn g" id="bExp">バックアップ（JSON書き出し）</button><button class="btn g" id="bImpF">バックアップから復元</button><input type="file" id="impF" accept=".json,application/json" hidden>
+<button class="btn g" id="bClose">閉じる</button></div></div></div>
+<div class="modal" id="mAI"><div class="sheet"><h3>🤖 AIから取り込み</h3>
+<p style="font-size:13px;color:var(--m)">AIが作ったJSONを貼り付けてください（配列 or {"items":[...]}）。</p>
+<textarea id="aiT" rows="8" placeholder='[{"name":"〇〇 アクスタ","genre":"アクスタ","series":"ポップアップA","w":8,"h":15,"qty":1}]'></textarea>
+<div class="acts"><button class="btn g" id="aiC">キャンセル</button><button class="btn" id="aiN">確認へ</button></div></div></div>
+<div class="modal" id="mConf"><div class="sheet"><h3>この内容で追加しますか？</h3><div id="cList"></div>
+<div class="acts"><button class="btn g" id="cC">やめる</button><button class="btn" id="cOK">追加する</button></div></div></div>
+<div class="modal" id="mLists"><div class="sheet"><h3>ジャンル・シリーズ</h3>
+<label>ジャンル</label><div id="lG"></div><div class="li"><input id="nG" placeholder="追加"><button class="btn" id="aG">＋</button></div>
+<label>シリーズ</label><div id="lS"></div><div class="li"><input id="nS" placeholder="追加"><button class="btn" id="aS">＋</button></div>
+<div class="acts"><button class="btn" id="lC">閉じる</button></div></div></div>
+<script src="app.js"></script></body></html>
