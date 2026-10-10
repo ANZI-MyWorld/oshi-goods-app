@@ -8,6 +8,7 @@
 | key | 型 | 必須 | 説明 |
 |---|---|---|---|
 | name | string | ✔ | グッズ名 |
+| work | string | | 作品名（作品タイトル）。`title` / `作品名` キーも可。未登録なら自動追加 |
 | genre | string | | ジャンル（アクスタ, 缶バッジ, タペストリー…）。未登録なら自動追加 |
 | series | string | | シリーズ（ポップアップA, 〇〇コラボ…）。未登録なら自動追加 |
 | w | number | | 横 cm |
@@ -19,7 +20,7 @@
 
 例:
 ```json
-[{"name":"推しA アクリルスタンド","genre":"アクスタ","series":"ポップアップA","w":8,"h":15,"qty":1,"url":"https://example.com","memo":"会場限定"}]
+[{"name":"推しA アクリルスタンド","work":"〇〇〇","genre":"アクスタ","series":"ポップアップA","w":8,"h":15,"qty":1,"url":"https://example.com","memo":"会場限定"}]
 ```
 
 ### 取り込み方法

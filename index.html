@@ -14,7 +14,7 @@ h2.g{font-size:14px;color:var(--pd);margin:16px 4px 6px;border-bottom:2px dotted
 .item{display:flex;gap:10px;background:var(--card);border-radius:16px;padding:10px;margin-bottom:8px;box-shadow:0 2px 6px rgba(232,102,154,.1)}
 .item img,.ph{width:64px;height:64px;border-radius:12px;object-fit:cover;background:#ffe3ee;flex:none;display:flex;align-items:center;justify-content:center;font-size:26px}
 .item .b{flex:1;min-width:0}.item .n{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tag{display:inline-block;font-size:11px;background:#ffe3ee;color:var(--pd);border-radius:10px;padding:2px 8px;margin:3px 3px 0 0}.tag.s{background:#e8f0ff;color:#5a74c9}
+.tag{display:inline-block;font-size:11px;background:#ffe3ee;color:var(--pd);border-radius:10px;padding:2px 8px;margin:3px 3px 0 0}.tag.s{background:#e8f0ff;color:#5a74c9}.tag.w{background:#e6f7ea;color:#3a8a52}
 .q{font-weight:700;color:var(--pd);align-self:center;font-size:18px}
 .fab{position:fixed;right:20px;bottom:calc(20px + env(safe-area-inset-bottom));width:60px;height:60px;border-radius:50%;background:var(--pd);color:#fff;font-size:32px;border:0;box-shadow:0 4px 12px rgba(232,102,154,.4)}
 .modal{position:fixed;inset:0;background:rgba(74,58,66,.4);display:none;z-index:10;overflow:auto}.modal.on{display:block}
@@ -30,13 +30,14 @@ h2.g{font-size:14px;color:var(--pd);margin:16px 4px 6px;border-bottom:2px dotted
 <header><h1>🌟 推しグッズ帳</h1><button id="mBtn">メニュー</button></header>
 <main>
 <div class="bar"><input id="q" placeholder="🔍 検索"></div>
-<div class="bar"><select id="fg"></select><select id="fs"></select><select id="grp"><option value="genre">ジャンル別</option><option value="series">シリーズ別</option><option value="none">まとめない</option></select></div>
+<div class="bar"><select id="fg"></select><select id="fs"></select><select id="fw"></select><select id="grp"><option value="genre">ジャンル別</option><option value="work">作品別</option><option value="series">シリーズ別</option><option value="none">まとめない</option></select></div>
 <div class="sum" id="sum"></div><div id="list"></div>
 </main>
 <button class="fab" id="add">＋</button>
 <div class="modal" id="mEdit"><div class="sheet">
 <h3 id="eT">グッズを登録</h3><input type="hidden" id="eId">
 <label>名前 *</label><input id="eName">
+<label>作品名</label><input id="eWork" list="dlW" placeholder="例：〇〇〇（作品タイトル）"><datalist id="dlW"></datalist>
 <label>ジャンル</label><input id="eGenre" list="dlG" placeholder="例：アクスタ"><datalist id="dlG"></datalist>
 <label>シリーズ</label><input id="eSeries" list="dlS" placeholder="例：ポップアップA"><datalist id="dlS"></datalist>
 <label>サイズ（cm）横 × 縦 × 奥行き</label><div class="row"><input id="eW" type="number" step="0.1" inputmode="decimal" placeholder="横">×<input id="eH" type="number" step="0.1" inputmode="decimal" placeholder="縦">×<input id="eD" type="number" step="0.1" inputmode="decimal" placeholder="奥(任意)"></div>
@@ -53,12 +54,13 @@ h2.g{font-size:14px;color:var(--pd);margin:16px 4px 6px;border-bottom:2px dotted
 <button class="btn g" id="bClose">閉じる</button></div></div></div>
 <div class="modal" id="mAI"><div class="sheet"><h3>🤖 AIから取り込み</h3>
 <p style="font-size:13px;color:var(--m)">AIが作ったJSONを貼り付けてください（配列 or {"items":[...]}）。</p>
-<textarea id="aiT" rows="8" placeholder='[{"name":"〇〇 アクスタ","genre":"アクスタ","series":"ポップアップA","w":8,"h":15,"qty":1}]'></textarea>
+<textarea id="aiT" rows="8" placeholder='[{"name":"〇〇 アクスタ","work":"作品名","genre":"アクスタ","series":"ポップアップA","w":8,"h":15,"qty":1}]'></textarea>
 <div class="acts"><button class="btn g" id="aiC">キャンセル</button><button class="btn" id="aiN">確認へ</button></div></div></div>
 <div class="modal" id="mConf"><div class="sheet"><h3>この内容で追加しますか？</h3><div id="cList"></div>
 <div class="acts"><button class="btn g" id="cC">やめる</button><button class="btn" id="cOK">追加する</button></div></div></div>
 <div class="modal" id="mLists"><div class="sheet"><h3>ジャンル・シリーズ</h3>
 <label>ジャンル</label><div id="lG"></div><div class="li"><input id="nG" placeholder="追加"><button class="btn" id="aG">＋</button></div>
+<label>作品名</label><div id="lW"></div><div class="li"><input id="nW" placeholder="追加"><button class="btn" id="aW">＋</button></div>
 <label>シリーズ</label><div id="lS"></div><div class="li"><input id="nS" placeholder="追加"><button class="btn" id="aS">＋</button></div>
 <div class="acts"><button class="btn" id="lC">閉じる</button></div></div></div>
 <script src="app.js"></script></body></html>
