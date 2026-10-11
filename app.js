@@ -44,7 +44,9 @@ function setPh(p){curPhoto=p;$('prev').src=p||'';$('prev').style.display=p?'bloc
 function edit(i){i=i||{};$('eT').textContent=i.id?'グッズを編集':'グッズを登録';$('eId').value=i.id||'';
  $('eName').value=i.name||'';$('eWork').value=i.work||'';$('eGenre').value=i.genre||'';$('eSeries').value=i.series||'';$('eW').value=i.w??'';$('eH').value=i.h??'';$('eD').value=i.d??'';
  $('eQty').value=i.qty??1;$('ePrice').value=i.price??'';$('eNfs').checked=!!i.notForSale;$('ePrice').disabled=!!i.notForSale;$('ePlan').checked=!!i.planned;
- $('eUrl').value=i.url||'';$('eMemo').value=i.memo||'';$('eFile').value='';setPh(ph(i));$('eDel').style.display=i.id?'':'none';open('mEdit')}
+ $('eUrl').value=i.url||'';$('eMemo').value=i.memo||'';$('eFile').value='';setPh(ph(i));$('eDel').style.display=$('eDup').style.display=i.id?'':'none';dupRef=null;open('mEdit')}
+let dupRef=null;
+$('eDup').onclick=()=>{const x=D.items.find(i=>i.id===$('eId').value);dupRef=x&&x.photoRef||null;$('eId').value='';$('eT').textContent='複製して登録';$('eDel').style.display=$('eDup').style.display='none';$('eName').focus()};
 $('eNfs').onchange=()=>{$('ePrice').disabled=$('eNfs').checked;if($('eNfs').checked)$('ePrice').value=''};
 $('bNfs').onchange=()=>{$('bPrice').disabled=$('bNfs').checked;if($('bNfs').checked)$('bPrice').value=''};
 $('add').onclick=()=>edit();$('eCancel').onclick=()=>close('mEdit');
@@ -58,7 +60,7 @@ function norm(o){const nfs=bool(o.notForSale??o['非売品']);return{id:uid(),na
 $('eSave').onclick=()=>{if(!$('eName').value.trim())return alert('名前を入れてください');
  const id=$('eId').value,o=norm({name:$('eName').value,work:$('eWork').value,genre:$('eGenre').value,series:$('eSeries').value,w:$('eW').value,h:$('eH').value,d:$('eD').value,qty:$('eQty').value,price:$('ePrice').value,notForSale:$('eNfs').checked,planned:$('ePlan').checked,url:$('eUrl').value,memo:$('eMemo').value,photo:curPhoto});
  addList('works',o.work);addList('genres',o.genre);addList('series',o.series);
- if(id){const x=D.items.find(i=>i.id===id);if(x.photoRef&&curPhoto&&curPhoto===D.photos[x.photoRef])o.photo=null,o.photoRef=x.photoRef;else delete x.photoRef;Object.assign(x,o,{id,created:x.created})}else D.items.unshift(o);save();close('mEdit');render()};
+ if(id){const x=D.items.find(i=>i.id===id);if(x.photoRef&&curPhoto&&curPhoto===D.photos[x.photoRef])o.photo=null,o.photoRef=x.photoRef;else delete x.photoRef;Object.assign(x,o,{id,created:x.created})}else{if(dupRef&&curPhoto&&curPhoto===D.photos[dupRef]){o.photo=null;o.photoRef=dupRef}D.items.unshift(o)}save();close('mEdit');render()};
 $('eDel').onclick=()=>{if(!confirm('削除しますか？'))return;D.items=D.items.filter(i=>i.id!==$('eId').value);save();close('mEdit');render()};
 // bulk
 function setBulk(on){bulk=on;sel.clear();document.body.classList.toggle('bulk',on);$('bulkBtn').textContent=on?'選択終了':'選択';render()}
