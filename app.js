@@ -50,10 +50,10 @@ $('bNfs').onchange=()=>{$('bPrice').disabled=$('bNfs').checked;if($('bNfs').chec
 $('add').onclick=()=>edit();$('eCancel').onclick=()=>close('mEdit');
 $('qm').onclick=()=>$('eQty').value=Math.max(0,(+$('eQty').value||0)-1);$('qp').onclick=()=>$('eQty').value=(+$('eQty').value||0)+1;
 $('rmPh').onclick=()=>setPh(null);
-function compress(f,cb){const r=new FileReader();r.onload=()=>{const img=new Image();img.onload=()=>{const M=480,s=Math.min(1,M/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=img.width*s;c.height=img.height*s;c.getContext('2d').drawImage(img,0,0,c.width,c.height);cb(c.toDataURL('image/jpeg',.72))};img.src=r.result};r.readAsDataURL(f)}
+function compress(f,cb){const r=new FileReader();r.onload=()=>{const img=new Image();img.onload=()=>{const M=480,s=Math.min(1,M/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=img.width*s;c.height=img.height*s;c.getContext('2d').drawImage(img,0,0,c.width,c.height);cb(c.toDataURL('image/jpeg',.72))};img.onerror=()=>{alert('この画像は読み込めませんでした（PNG/JPEG等をお試しください）');cb(null)};img.src=r.result};r.onerror=()=>{alert('ファイルを読み込めませんでした');cb(null)};r.readAsDataURL(f)}
 $('eFile').onchange=e=>{const f=e.target.files[0];if(f)compress(f,setPh)};
 let bPhoto=null;function setBPh(p){bPhoto=p;$('bPrev').src=p||'';$('bPrev').style.display=p?'block':'none'}
-$('bFile').onchange=e=>{const f=e.target.files[0];if(f)compress(f,setBPh)};
+let bBusy=null;$('bFile').onchange=e=>{const f=e.target.files[0];if(!f){setBPh(null);return}$('bkOK').textContent='画像を処理中…';bBusy=new Promise(res=>compress(f,p=>{setBPh(p);res()})).finally(()=>{bBusy=null;$('bkOK').textContent='適用'})};
 function norm(o){const nfs=bool(o.notForSale??o['非売品']);return{id:uid(),name:String(o.name||'').trim()||'(名称未設定)',work:String(o.work??o.title??o['作品名']??'').trim(),genre:String(o.genre||'').trim(),series:String(o.series||'').trim(),w:num(o.w??o.width),h:num(o.h??o.height),d:num(o.d??o.depth),qty:Math.max(0,parseInt(o.qty??o.quantity??1)||0),price:nfs?null:price(o.price??o['価格']),notForSale:nfs,planned:bool(o.planned??o['購入予定']),url:String(o.url||''),memo:String(o.memo||''),photo:typeof o.photo==='string'&&o.photo.startsWith('data:image')?o.photo:null,created:Date.now()}}
 $('eSave').onclick=()=>{if(!$('eName').value.trim())return alert('名前を入れてください');
  const id=$('eId').value,o=norm({name:$('eName').value,work:$('eWork').value,genre:$('eGenre').value,series:$('eSeries').value,w:$('eW').value,h:$('eH').value,d:$('eD').value,qty:$('eQty').value,price:$('ePrice').value,notForSale:$('eNfs').checked,planned:$('ePlan').checked,url:$('eUrl').value,memo:$('eMemo').value,photo:curPhoto});
@@ -79,7 +79,7 @@ function bulkApply(ids,F){const c={};
  if(F.photo!==undefined){c.photo=null;if(F.photo){const pid='p'+uid();D.photos[pid]=F.photo;c.photoRef=pid}else c.photoRef=null}if(F.url!==undefined)c.url=F.url;if(F.memo!==undefined)c.memo=F.memo;
  addList('works',c.work);addList('genres',c.genre);addList('series',c.series);
  D.items.forEach(i=>{if(ids.has(i.id))Object.assign(i,c)});return Object.keys(c).length}
-$('bkOK').onclick=()=>{const en=f=>document.querySelector(`#mBulk .bf[data-f="${f}"] .en`).checked,F={};
+$('bkOK').onclick=async()=>{if(bBusy)await bBusy;const en=f=>document.querySelector(`#mBulk .bf[data-f="${f}"] .en`).checked,F={};
  if(en('work'))F.work=$('bWork').value;if(en('genre'))F.genre=$('bGenre').value;if(en('series'))F.series=$('bSeries').value;
  if(en('size'))F.size={w:$('bW').value,h:$('bH').value,d:$('bD').value};if(en('qty'))F.qty=$('bQty').value;
  if(en('price'))F.price={price:$('bPrice').value,notForSale:$('bNfs').checked};if(en('planned'))F.planned=$('bPlan').value==='1';
