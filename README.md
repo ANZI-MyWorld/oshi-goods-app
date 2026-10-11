@@ -37,3 +37,5 @@ base64url生成例 (Python): `base64.urlsafe_b64encode(json.dumps(items,ensure_a
 - qty 0 はグレー表示、購入予定はオレンジ枠＋🛒バッジ。
 - 「選択」で一括モード: 複数選択・表示中を全選択・一括削除・一括編集（チェックした項目のみ上書き。名前は対象外）。
 - 一括編集の画像は1枚だけ `photos`（id→画像）に保存し、各アイテムは `photoRef` で参照（容量節約）。個別の `photo` も従来どおり有効。
+- 保存先: IndexedDB `oshiGoods`（`kv`ストアの `data` にアイテム・各リスト、`photos` ストアに画像 dataURL）。初回起動時に旧 localStorage `oshiGoods.v1` から自動移行し、件数・写真数を検証してから旧データを削除（`oshiGoods.migrated`=1）。画像は全て `photoRef` 参照（同一画像は自動で1枚に統合）。表示設定は localStorage `oshiGoods.ui`。
+- バックアップJSONは従来どおり `{items,genres,series,works,photos}`。古い形式（items内 `photo`）も復元可。

@@ -1,11 +1,40 @@
 const $=s=>document.getElementById(s),K='oshiGoods.v1',UK='oshiGoods.ui';
-let D=JSON.parse(localStorage.getItem(K)||'null')||{items:[],genres:['アクスタ','缶バッジ','タペストリー','ぬいぐるみ','ブロマイド','キーホルダー','アクキー','色紙','その他'],series:[],works:[]};
-if(!D.photos||typeof D.photos!=='object')D.photos={};
-['genres','series','works'].forEach(k=>{if(!Array.isArray(D[k]))D[k]=[]});if(!Array.isArray(D.items))D.items=[];
+const DEF=()=>({items:[],genres:['アクスタ','缶バッジ','タペストリー','ぬいぐるみ','ブロマイド','キーホルダー','アクキー','色紙','その他'],series:[],works:[],photos:{}});
+let D=DEF();
+function fix(){if(!D||typeof D!=='object')D=DEF();if(!D.photos||typeof D.photos!=='object')D.photos={};['genres','series','works'].forEach(k=>{if(!Array.isArray(D[k]))D[k]=[]});if(!Array.isArray(D.items))D.items=[]}
 let U=Object.assign({st:['own','none','plan'],genre:''},JSON.parse(localStorage.getItem(UK)||'{}'));if(!Array.isArray(U.st))U.st=['own','none','plan'];
 let curPhoto=null,pending=[],bulk=false,sel=new Set(),visible=[];
 function gc(){const u=new Set(D.items.map(i=>i.photoRef).filter(Boolean));Object.keys(D.photos).forEach(k=>{if(!u.has(k))delete D.photos[k]})}
-const save=()=>{gc();try{localStorage.setItem(K,JSON.stringify(D));return true}catch(e){alert('保存容量がいっぱいで保存できませんでした😢\n写真を外す・小さい写真にする・バックアップ後に整理するなどで空きを作ってください。');return false}};
+// photos: inline item.photo -> D.photos (dedupe), items keep photoRef
+function normPhotos(){const by={};for(const k in D.photos)by[D.photos[k]]=k;D.items.forEach(i=>{if(typeof i.photo==='string'&&i.photo.startsWith('data:')){let k=by[i.photo];if(!k){k='p'+uid();D.photos[k]=i.photo;by[i.photo]=k}i.photoRef=k}if('photo'in i)i.photo=null})}
+// ---- IndexedDB storage ----
+let db=null,saved=new Set(),full=true,chain=Promise.resolve();
+const req=r=>new Promise((ok,ng)=>{r.onsuccess=()=>ok(r.result);r.onerror=()=>ng(r.error)});
+const txDone=t=>new Promise((ok,ng)=>{t.oncomplete=()=>ok();t.onerror=t.onabort=()=>ng(t.error||new Error('abort'))});
+function openDB(){return new Promise((ok,ng)=>{const r=indexedDB.open('oshiGoods',1);r.onupgradeneeded=()=>{const d=r.result;d.createObjectStore('kv');d.createObjectStore('photos')};r.onsuccess=()=>ok(r.result);r.onerror=()=>ng(r.error);r.onblocked=()=>ng(new Error('blocked'))})}
+const meta=()=>({items:D.items,genres:D.genres,series:D.series,works:D.works});
+async function writeAll(){const t=db.transaction(['kv','photos'],'readwrite'),P=t.objectStore('photos'),ids=Object.keys(D.photos);
+ if(full)P.clear();ids.forEach(k=>{if(full||!saved.has(k))P.put(D.photos[k],k)});[...saved].forEach(k=>{if(!(k in D.photos))P.delete(k)});
+ t.objectStore('kv').put(meta(),'data');await txDone(t);saved=new Set(ids);full=false}
+async function readAll(){const t=db.transaction(['kv','photos']),m=await req(t.objectStore('kv').get('data'));if(!m)return null;
+ const ks=await req(t.objectStore('photos').getAllKeys()),vs=await req(t.objectStore('photos').getAll()),ph={};ks.forEach((k,i)=>ph[k]=vs[i]);return Object.assign(m,{photos:ph})}
+function fullAlert(){alert('保存容量がいっぱいで保存できませんでした😢\n写真を外す・小さい写真にする・バックアップ後に整理するなどで空きを作ってください。')}
+function save(){normPhotos();gc();const snap=JSON.stringify(meta());
+ if(!db){try{localStorage.setItem(K,JSON.stringify(D));return Promise.resolve(true)}catch(e){fullAlert();return Promise.resolve(false)}}
+ return chain=chain.then(()=>writeAll().then(()=>true,e=>{console.error(e);saved=new Set();full=true;fullAlert();return false}))}
+async function init(){fix();
+ try{db=await openDB()}catch(e){console.warn('IDB unavailable',e);db=null}
+ if(!db){D=JSON.parse(localStorage.getItem(K)||'null')||DEF();fix();normPhotos();return}
+ let d=await readAll();
+ if(d){D=d;fix();saved=new Set(Object.keys(D.photos));full=false;if(localStorage.getItem(K)!=null&&localStorage.getItem(MK)==='1')localStorage.removeItem(K);
+  else if(localStorage.getItem(K)!=null){/* IDB present but migration not marked: verify then remove */await verifyAndClear()}return}
+ const raw=localStorage.getItem(K);D=raw?JSON.parse(raw):DEF();fix();normPhotos();gc();
+ if(raw){saved=new Set();full=true;await writeAll();await verifyAndClear()}}
+async function verifyAndClear(){const raw=localStorage.getItem(K);if(raw==null)return;const L=JSON.parse(raw),d=await readAll();
+ const ln=(L.items||[]).length,lp=(L.items||[]).filter(i=>i.photo||i.photoRef).length,dp=d.items.filter(i=>i.photoRef&&d.photos[i.photoRef]).length;
+ if(d&&d.items.length>=ln&&dp>=lp){localStorage.setItem(MK,'1');localStorage.removeItem(K)}else console.warn('migration verify failed; keeping localStorage',ln,lp,d&&d.items.length,dp)}
+async function storageInfo(){try{const e=await navigator.storage.estimate(),p=navigator.storage.persisted?await navigator.storage.persisted():false,mb=x=>(x/1048576).toFixed(1)+'MB';$('stInfo').textContent=`使用量 ${mb(e.usage||0)} / 上限 約${mb(e.quota||0)}${p?'（保護あり）':''}${db?'':'（互換モード）'}`}catch(_){$('stInfo').textContent=''}}
+const MK='oshiGoods.migrated';
 const ph=i=>i.photo||(i.photoRef&&D.photos[i.photoRef])||null;
 const saveU=()=>localStorage.setItem(UK,JSON.stringify(U));
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -89,12 +118,12 @@ $('bkOK').onclick=async()=>{if(bBusy)await bBusy;const en=f=>document.querySelec
  if(en('url'))F.url=$('bUrl').value;if(en('memo'))F.memo=$('bMemo').value;
  if(!Object.keys(F).length)return alert('上書きする項目にチェックを入れてください');
  if(!confirm(`${sel.size}件の${Object.keys(F).length}項目を上書きします。よろしいですか？`))return;
- const bak=JSON.stringify(D);bulkApply(sel,F);if(!save()){D=JSON.parse(bak);render();return}close('mBulk');setBulk(false)};
+ const bak=JSON.stringify(D);bulkApply(sel,F);if(!await save()){D=JSON.parse(bak);render();return}close('mBulk');setBulk(false)};
 ['q'].forEach(x=>$(x).oninput=render);['fs','fw','grp'].forEach(x=>$(x).onchange=render);
-$('mBtn').onclick=()=>open('mMenu');$('bClose').onclick=()=>close('mMenu');
+$('mBtn').onclick=()=>{storageInfo();open('mMenu')};$('bClose').onclick=()=>close('mMenu');
 $('bExp').onclick=()=>{const b=new Blob([JSON.stringify(D,null,1)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`oshi-goods-${new Date().toISOString().slice(0,10)}.json`;a.click()};
 $('bImpF').onclick=()=>$('impF').click();
-$('impF').onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>{try{const j=JSON.parse(t);if(!Array.isArray(j.items))throw 0;if(!confirm(`${j.items.length}件で今のデータを置き換えます。よろしいですか？`))return;D={items:j.items,genres:j.genres||D.genres,series:j.series||[],works:Array.isArray(j.works)?j.works:[],photos:j.photos&&typeof j.photos==='object'?j.photos:{}};D.items.forEach(i=>addList('works',i.work));save();close('mMenu');render()}catch(_){alert('バックアップファイルを読めませんでした')}})};
+$('impF').onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>{try{const j=JSON.parse(t);if(!Array.isArray(j.items))throw 0;if(!confirm(`${j.items.length}件で今のデータを置き換えます。よろしいですか？`))return;D={items:j.items,genres:j.genres||D.genres,series:j.series||[],works:Array.isArray(j.works)?j.works:[],photos:j.photos&&typeof j.photos==='object'?j.photos:{}};saved=new Set();full=true;D.items.forEach(i=>addList('works',i.work));save();close('mMenu');render()}catch(_){alert('バックアップファイルを読めませんでした')}})};
 function parseItems(t){let j=JSON.parse(t);if(!Array.isArray(j))j=j.items||[j];return j.filter(o=>o&&typeof o==='object').map(norm)}
 function confirmImport(items){if(!items.length)return alert('取り込めるデータがありません');pending=items;$('cList').innerHTML=items.map(i=>card(i,false)).join('');open('mConf')}
 $('bAI').onclick=()=>{close('mMenu');$('aiT').value='';open('mAI')};$('aiC').onclick=()=>close('mAI');
@@ -109,5 +138,6 @@ $('bList').onclick=()=>{close('mMenu');lists();open('mLists')};$('lC').onclick=(
 $('mLists').addEventListener('change',e=>{const t=e.target;if(t.tagName!=='INPUT'||!t.dataset.k)return;const k=t.dataset.k,old=D[k][t.dataset.i],nv=t.value.trim();if(!nv)return;D[k][t.dataset.i]=nv;const f={genres:'genre',series:'series',works:'work'}[k];D.items.forEach(i=>{if(i[f]===old)i[f]=nv});if(k==='genres'&&U.genre===old){U.genre=nv;saveU()}save()});
 $('mLists').addEventListener('click',e=>{const t=e.target;if(t.tagName!=='BUTTON'||!t.dataset.k)return;D[t.dataset.k].splice(t.dataset.i,1);save();lists()});
 $('aG').onclick=()=>{addList('genres',$('nG').value);$('nG').value='';save();lists()};$('aW').onclick=()=>{addList('works',$('nW').value);$('nW').value='';save();lists()};$('aS').onclick=()=>{addList('series',$('nS').value);$('nS').value='';save();lists()};
-window.addEventListener('hashchange',hashImport);render();hashImport();
+window.addEventListener('hashchange',hashImport);
+init().catch(e=>{console.error(e);alert('データの読み込みに失敗しました。アプリを開き直してください。')}).then(()=>{render();hashImport();if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{})});
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
