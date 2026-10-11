@@ -1,9 +1,12 @@
 const $=s=>document.getElementById(s),K='oshiGoods.v1',UK='oshiGoods.ui';
 let D=JSON.parse(localStorage.getItem(K)||'null')||{items:[],genres:['アクスタ','缶バッジ','タペストリー','ぬいぐるみ','ブロマイド','キーホルダー','アクキー','色紙','その他'],series:[],works:[]};
+if(!D.photos||typeof D.photos!=='object')D.photos={};
 ['genres','series','works'].forEach(k=>{if(!Array.isArray(D[k]))D[k]=[]});if(!Array.isArray(D.items))D.items=[];
 let U=Object.assign({st:['own','none','plan'],genre:''},JSON.parse(localStorage.getItem(UK)||'{}'));if(!Array.isArray(U.st))U.st=['own','none','plan'];
 let curPhoto=null,pending=[],bulk=false,sel=new Set(),visible=[];
-const save=()=>{try{localStorage.setItem(K,JSON.stringify(D))}catch(e){alert('保存容量がいっぱいです。写真を減らすかバックアップ後に整理してください。')}};
+function gc(){const u=new Set(D.items.map(i=>i.photoRef).filter(Boolean));Object.keys(D.photos).forEach(k=>{if(!u.has(k))delete D.photos[k]})}
+const save=()=>{gc();try{localStorage.setItem(K,JSON.stringify(D));return true}catch(e){alert('保存容量がいっぱいで保存できませんでした😢\n写真を外す・小さい写真にする・バックアップ後に整理するなどで空きを作ってください。');return false}};
+const ph=i=>i.photo||(i.photoRef&&D.photos[i.photoRef])||null;
 const saveU=()=>localStorage.setItem(UK,JSON.stringify(U));
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
@@ -15,7 +18,7 @@ const yen=n=>'¥'+n.toLocaleString('ja-JP');
 function addList(k,v){v=(v||'').trim();if(v&&!D[k].includes(v))D[k].push(v)}
 function sizeStr(i){if(!i.w&&!i.h)return'';return `${i.w??'?'}×${i.h??'?'}${i.d?'×'+i.d:''}cm`}
 function stMatch(i){const q=+i.qty||0;return(U.st.includes('own')&&q>=1)||(U.st.includes('none')&&q===0)||(U.st.includes('plan')&&!!i.planned)}
-function card(i,ck){const q=+i.qty||0;return `<div class="item${q===0?' zero':''}${i.planned?' plan':''}" data-id="${i.id||''}">${ck?`<input type="checkbox" class="ck"${sel.has(i.id)?' checked':''}>`:''}${i.photo?`<img src="${i.photo}">`:'<div class="ph">🎀</div>'}<div class="b"><div class="n">${esc(i.name)}</div>${i.planned?'<span class="tag plan">🛒購入予定</span>':''}${i.work?`<span class="tag w">${esc(i.work)}</span>`:''}${i.genre?`<span class="tag">${esc(i.genre)}</span>`:''}${i.series?`<span class="tag s">${esc(i.series)}</span>`:''}${i.notForSale?'<span class="tag nfs">非売品</span>':i.price!=null?`<span class="tag p">${yen(i.price)}</span>`:''}<div style="font-size:12px;color:var(--m)">${esc(sizeStr(i))}${ck?'':' '+esc(i.memo||'')}</div></div><div class="q">×${q}</div></div>`}
+function card(i,ck){const q=+i.qty||0;return `<div class="item${q===0?' zero':''}${i.planned?' plan':''}" data-id="${i.id||''}">${ck?`<input type="checkbox" class="ck"${sel.has(i.id)?' checked':''}>`:''}${ph(i)?`<img src="${ph(i)}">`:'<div class="ph">🎀</div>'}<div class="b"><div class="n">${esc(i.name)}</div>${i.planned?'<span class="tag plan">🛒購入予定</span>':''}${i.work?`<span class="tag w">${esc(i.work)}</span>`:''}${i.genre?`<span class="tag">${esc(i.genre)}</span>`:''}${i.series?`<span class="tag s">${esc(i.series)}</span>`:''}${i.notForSale?'<span class="tag nfs">非売品</span>':i.price!=null?`<span class="tag p">${yen(i.price)}</span>`:''}<div style="font-size:12px;color:var(--m)">${esc(sizeStr(i))}${ck?'':' '+esc(i.memo||'')}</div></div><div class="q">×${q}</div></div>`}
 function render(){
  if(U.genre&&!D.genres.includes(U.genre))U.genre='';
  const fs=$('fs').value,fw=$('fw').value,fg=U.genre;
@@ -41,18 +44,21 @@ function setPh(p){curPhoto=p;$('prev').src=p||'';$('prev').style.display=p?'bloc
 function edit(i){i=i||{};$('eT').textContent=i.id?'グッズを編集':'グッズを登録';$('eId').value=i.id||'';
  $('eName').value=i.name||'';$('eWork').value=i.work||'';$('eGenre').value=i.genre||'';$('eSeries').value=i.series||'';$('eW').value=i.w??'';$('eH').value=i.h??'';$('eD').value=i.d??'';
  $('eQty').value=i.qty??1;$('ePrice').value=i.price??'';$('eNfs').checked=!!i.notForSale;$('ePrice').disabled=!!i.notForSale;$('ePlan').checked=!!i.planned;
- $('eUrl').value=i.url||'';$('eMemo').value=i.memo||'';$('eFile').value='';setPh(i.photo||null);$('eDel').style.display=i.id?'':'none';open('mEdit')}
+ $('eUrl').value=i.url||'';$('eMemo').value=i.memo||'';$('eFile').value='';setPh(ph(i));$('eDel').style.display=i.id?'':'none';open('mEdit')}
 $('eNfs').onchange=()=>{$('ePrice').disabled=$('eNfs').checked;if($('eNfs').checked)$('ePrice').value=''};
 $('bNfs').onchange=()=>{$('bPrice').disabled=$('bNfs').checked;if($('bNfs').checked)$('bPrice').value=''};
 $('add').onclick=()=>edit();$('eCancel').onclick=()=>close('mEdit');
 $('qm').onclick=()=>$('eQty').value=Math.max(0,(+$('eQty').value||0)-1);$('qp').onclick=()=>$('eQty').value=(+$('eQty').value||0)+1;
 $('rmPh').onclick=()=>setPh(null);
-$('eFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const img=new Image();img.onload=()=>{const M=480,s=Math.min(1,M/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=img.width*s;c.height=img.height*s;c.getContext('2d').drawImage(img,0,0,c.width,c.height);setPh(c.toDataURL('image/jpeg',.72))};img.src=r.result};r.readAsDataURL(f)};
+function compress(f,cb){const r=new FileReader();r.onload=()=>{const img=new Image();img.onload=()=>{const M=480,s=Math.min(1,M/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=img.width*s;c.height=img.height*s;c.getContext('2d').drawImage(img,0,0,c.width,c.height);cb(c.toDataURL('image/jpeg',.72))};img.src=r.result};r.readAsDataURL(f)}
+$('eFile').onchange=e=>{const f=e.target.files[0];if(f)compress(f,setPh)};
+let bPhoto=null;function setBPh(p){bPhoto=p;$('bPrev').src=p||'';$('bPrev').style.display=p?'block':'none'}
+$('bFile').onchange=e=>{const f=e.target.files[0];if(f)compress(f,setBPh)};
 function norm(o){const nfs=bool(o.notForSale??o['非売品']);return{id:uid(),name:String(o.name||'').trim()||'(名称未設定)',work:String(o.work??o.title??o['作品名']??'').trim(),genre:String(o.genre||'').trim(),series:String(o.series||'').trim(),w:num(o.w??o.width),h:num(o.h??o.height),d:num(o.d??o.depth),qty:Math.max(0,parseInt(o.qty??o.quantity??1)||0),price:nfs?null:price(o.price??o['価格']),notForSale:nfs,planned:bool(o.planned??o['購入予定']),url:String(o.url||''),memo:String(o.memo||''),photo:typeof o.photo==='string'&&o.photo.startsWith('data:image')?o.photo:null,created:Date.now()}}
 $('eSave').onclick=()=>{if(!$('eName').value.trim())return alert('名前を入れてください');
  const id=$('eId').value,o=norm({name:$('eName').value,work:$('eWork').value,genre:$('eGenre').value,series:$('eSeries').value,w:$('eW').value,h:$('eH').value,d:$('eD').value,qty:$('eQty').value,price:$('ePrice').value,notForSale:$('eNfs').checked,planned:$('ePlan').checked,url:$('eUrl').value,memo:$('eMemo').value,photo:curPhoto});
  addList('works',o.work);addList('genres',o.genre);addList('series',o.series);
- if(id){const x=D.items.find(i=>i.id===id);Object.assign(x,o,{id,created:x.created})}else D.items.unshift(o);save();close('mEdit');render()};
+ if(id){const x=D.items.find(i=>i.id===id);if(x.photoRef&&curPhoto&&curPhoto===D.photos[x.photoRef])o.photo=null,o.photoRef=x.photoRef;else delete x.photoRef;Object.assign(x,o,{id,created:x.created})}else D.items.unshift(o);save();close('mEdit');render()};
 $('eDel').onclick=()=>{if(!confirm('削除しますか？'))return;D.items=D.items.filter(i=>i.id!==$('eId').value);save();close('mEdit');render()};
 // bulk
 function setBulk(on){bulk=on;sel.clear();document.body.classList.toggle('bulk',on);$('bulkBtn').textContent=on?'選択終了':'選択';render()}
@@ -61,7 +67,7 @@ $('bkAll').onclick=()=>{const all=visible.length&&visible.every(id=>sel.has(id))
 $('bkDel').onclick=()=>{if(!sel.size)return alert('グッズを選択してください');if(!confirm(`選択した${sel.size}件を削除します。元に戻せません。よろしいですか？`))return;D.items=D.items.filter(i=>!sel.has(i.id));save();setBulk(false)};
 $('bkEdit').onclick=()=>{if(!sel.size)return alert('グッズを選択してください');$('bkT').textContent=`一括編集（${sel.size}件）`;
  document.querySelectorAll('#mBulk .bf').forEach(b=>{b.classList.remove('en');b.querySelector('.en').checked=false});
- ['bWork','bGenre','bSeries','bW','bH','bD','bPrice','bUrl','bMemo'].forEach(x=>$(x).value='');$('bQty').value=1;$('bNfs').checked=false;$('bPrice').disabled=false;$('bPlan').value='1';open('mBulk')};
+ ['bWork','bGenre','bSeries','bW','bH','bD','bPrice','bUrl','bMemo'].forEach(x=>$(x).value='');$('bQty').value=1;$('bFile').value='';setBPh(null);$('bNfs').checked=false;$('bPrice').disabled=false;$('bPlan').value='1';open('mBulk')};
 $('mBulk').addEventListener('change',e=>{if(e.target.classList.contains('en'))e.target.closest('.bf').classList.toggle('en',e.target.checked)});
 $('bkC').onclick=()=>close('mBulk');
 function bulkApply(ids,F){const c={};
@@ -69,22 +75,24 @@ function bulkApply(ids,F){const c={};
  if(F.size){c.w=num(F.size.w);c.h=num(F.size.h);c.d=num(F.size.d)}
  if(F.qty!==undefined)c.qty=Math.max(0,parseInt(F.qty)||0);
  if(F.price){c.notForSale=!!F.price.notForSale;c.price=c.notForSale?null:price(F.price.price)}
- if(F.planned!==undefined)c.planned=!!F.planned;if(F.url!==undefined)c.url=F.url;if(F.memo!==undefined)c.memo=F.memo;
+ if(F.planned!==undefined)c.planned=!!F.planned;
+ if(F.photo!==undefined){c.photo=null;if(F.photo){const pid='p'+uid();D.photos[pid]=F.photo;c.photoRef=pid}else c.photoRef=null}if(F.url!==undefined)c.url=F.url;if(F.memo!==undefined)c.memo=F.memo;
  addList('works',c.work);addList('genres',c.genre);addList('series',c.series);
  D.items.forEach(i=>{if(ids.has(i.id))Object.assign(i,c)});return Object.keys(c).length}
 $('bkOK').onclick=()=>{const en=f=>document.querySelector(`#mBulk .bf[data-f="${f}"] .en`).checked,F={};
  if(en('work'))F.work=$('bWork').value;if(en('genre'))F.genre=$('bGenre').value;if(en('series'))F.series=$('bSeries').value;
  if(en('size'))F.size={w:$('bW').value,h:$('bH').value,d:$('bD').value};if(en('qty'))F.qty=$('bQty').value;
  if(en('price'))F.price={price:$('bPrice').value,notForSale:$('bNfs').checked};if(en('planned'))F.planned=$('bPlan').value==='1';
+ if(en('photo')){F.photo=bPhoto;if(!bPhoto&&!confirm(`画像が選ばれていません。選択した${sel.size}件の写真を削除しますか？`))return}
  if(en('url'))F.url=$('bUrl').value;if(en('memo'))F.memo=$('bMemo').value;
  if(!Object.keys(F).length)return alert('上書きする項目にチェックを入れてください');
  if(!confirm(`${sel.size}件の${Object.keys(F).length}項目を上書きします。よろしいですか？`))return;
- bulkApply(sel,F);save();close('mBulk');setBulk(false)};
+ const bak=JSON.stringify(D);bulkApply(sel,F);if(!save()){D=JSON.parse(bak);render();return}close('mBulk');setBulk(false)};
 ['q'].forEach(x=>$(x).oninput=render);['fs','fw','grp'].forEach(x=>$(x).onchange=render);
 $('mBtn').onclick=()=>open('mMenu');$('bClose').onclick=()=>close('mMenu');
 $('bExp').onclick=()=>{const b=new Blob([JSON.stringify(D,null,1)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`oshi-goods-${new Date().toISOString().slice(0,10)}.json`;a.click()};
 $('bImpF').onclick=()=>$('impF').click();
-$('impF').onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>{try{const j=JSON.parse(t);if(!Array.isArray(j.items))throw 0;if(!confirm(`${j.items.length}件で今のデータを置き換えます。よろしいですか？`))return;D={items:j.items,genres:j.genres||D.genres,series:j.series||[],works:Array.isArray(j.works)?j.works:[]};D.items.forEach(i=>addList('works',i.work));save();close('mMenu');render()}catch(_){alert('バックアップファイルを読めませんでした')}})};
+$('impF').onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>{try{const j=JSON.parse(t);if(!Array.isArray(j.items))throw 0;if(!confirm(`${j.items.length}件で今のデータを置き換えます。よろしいですか？`))return;D={items:j.items,genres:j.genres||D.genres,series:j.series||[],works:Array.isArray(j.works)?j.works:[],photos:j.photos&&typeof j.photos==='object'?j.photos:{}};D.items.forEach(i=>addList('works',i.work));save();close('mMenu');render()}catch(_){alert('バックアップファイルを読めませんでした')}})};
 function parseItems(t){let j=JSON.parse(t);if(!Array.isArray(j))j=j.items||[j];return j.filter(o=>o&&typeof o==='object').map(norm)}
 function confirmImport(items){if(!items.length)return alert('取り込めるデータがありません');pending=items;$('cList').innerHTML=items.map(i=>card(i,false)).join('');open('mConf')}
 $('bAI').onclick=()=>{close('mMenu');$('aiT').value='';open('mAI')};$('aiC').onclick=()=>close('mAI');

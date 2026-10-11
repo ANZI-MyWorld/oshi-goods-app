@@ -36,3 +36,4 @@ base64url生成例 (Python): `base64.urlsafe_b64encode(json.dumps(items,ensure_a
 - 状態フィルタ（所持=qty≥1 / 未所持=qty 0 / 購入予定=planned）: 選択中のどれか1つに当てはまれば表示（OR）。選択は端末に保存（`oshiGoods.ui`）。
 - qty 0 はグレー表示、購入予定はオレンジ枠＋🛒バッジ。
 - 「選択」で一括モード: 複数選択・表示中を全選択・一括削除・一括編集（チェックした項目のみ上書き。名前は対象外）。
+- 一括編集の画像は1枚だけ `photos`（id→画像）に保存し、各アイテムは `photoRef` で参照（容量節約）。個別の `photo` も従来どおり有効。
