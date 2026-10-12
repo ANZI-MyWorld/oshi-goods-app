@@ -63,7 +63,7 @@ function render(){
  $('sum').textContent=`${L.length}種類 / 所持${tot}個${val?` / 所持品合計${yen(val)}`:''}${pl?` / 購入予定${pl}件`:''}${bulk?` ｜ ${sel.size}件選択中`:''}`;
  if(!L.length){$('list').innerHTML=`<div class="empty">${D.items.length?'該当するグッズがありません':'まだグッズがありません<br>右下の＋から登録しよう ✨'}</div>`;return}
  const G={};L.forEach(i=>{const k=grp==='none'?'':(i[grp]||'未分類');(G[k]=G[k]||[]).push(i)});
- $('list').innerHTML=Object.keys(G).sort((a,b)=>a.localeCompare(b,'ja')).map(k=>(grp==='none'?'':`<h2 class="g">${esc(k)}（${G[k].reduce((a,i)=>a+(+i.qty||0),0)}個）</h2>`)+G[k].map(i=>card(i,true)).join('')).join('');
+ $('list').innerHTML=Object.keys(G).sort((a,b)=>{const L=D[{genre:'genres',series:'series',work:'works'}[grp]]||[],x=L.indexOf(a),y=L.indexOf(b);return(x<0?1e9:x)-(y<0?1e9:y)||a.localeCompare(b,'ja')}).map(k=>(grp==='none'?'':`<h2 class="g">${esc(k)}（${G[k].reduce((a,i)=>a+(+i.qty||0),0)}個）</h2>`)+G[k].map(i=>card(i,true)).join('')).join('');
 }
 $('gtabs').onclick=e=>{const b=e.target.closest('button');if(!b)return;U.genre=b.dataset.g;saveU();render()};
 $('stc').onclick=e=>{const b=e.target.closest('button');if(!b)return;const s=b.dataset.st;U.st=U.st.includes(s)?U.st.filter(x=>x!==s):U.st.concat(s);saveU();render()};
@@ -133,10 +133,25 @@ $('cOK').onclick=()=>{pending.forEach(i=>{addList('works',i.work);addList('genre
 function b64d(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';return new TextDecoder().decode(Uint8Array.from(atob(s),c=>c.charCodeAt(0)))}
 function hashImport(){const m=location.hash.match(/import=([^&]+)/);if(!m)return;history.replaceState(null,'',location.pathname);
  try{let s=decodeURIComponent(m[1]);confirmImport(parseItems(s.trim().startsWith('[')||s.trim().startsWith('{')?s:b64d(s)))}catch(e){alert('リンクのデータを読めませんでした')}}
-function lists(){['genres','series','works'].forEach(k=>{$({genres:'lG',series:'lS',works:'lW'}[k]).innerHTML=D[k].map((v,ix)=>`<div class="li"><input value="${esc(v)}" data-k="${k}" data-i="${ix}"><button class="btn r" data-k="${k}" data-i="${ix}">×</button></div>`).join('')})}
+function lists(){['genres','series','works'].forEach(k=>{$({genres:'lG',series:'lS',works:'lW'}[k]).innerHTML=D[k].map((v,ix)=>`<div class="li" data-k="${k}" data-i="${ix}"><span class="hd" title="ドラッグで並べ替え">☰</span><input value="${esc(v)}" data-k="${k}" data-i="${ix}"><button class="sb" data-a="up" ${ix?'':'disabled'}>↑</button><button class="sb" data-a="dn" ${ix<D[k].length-1?'':'disabled'}>↓</button><button class="sb" data-a="cp">📋</button><button class="btn r" data-a="del">×</button></div>`).join('')})}
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),1500)}
+function copyText(s){const ok=()=>toast('コピーしました'),fb=()=>{const ta=document.createElement('textarea');ta.value=s;ta.setAttribute('readonly','');ta.style.cssText='position:fixed;top:0;left:0;opacity:0';document.body.appendChild(ta);ta.select();let r=false;try{r=document.execCommand('copy')}catch(_){}ta.remove();r?ok():toast('コピーできませんでした')};
+ if(!s)return toast('コピーする内容がありません');if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(s).then(ok,fb);else fb()}
+function moveList(k,from,to){if(to<0||to>=D[k].length||from===to)return;const[v]=D[k].splice(from,1);D[k].splice(to,0,v);save();lists()}
 $('bList').onclick=()=>{close('mMenu');lists();open('mLists')};$('lC').onclick=()=>{close('mLists');render()};
 $('mLists').addEventListener('change',e=>{const t=e.target;if(t.tagName!=='INPUT'||!t.dataset.k)return;const k=t.dataset.k,old=D[k][t.dataset.i],nv=t.value.trim();if(!nv)return;D[k][t.dataset.i]=nv;const f={genres:'genre',series:'series',works:'work'}[k];D.items.forEach(i=>{if(i[f]===old)i[f]=nv});if(k==='genres'&&U.genre===old){U.genre=nv;saveU()}save()});
-$('mLists').addEventListener('click',e=>{const t=e.target;if(t.tagName!=='BUTTON'||!t.dataset.k)return;D[t.dataset.k].splice(t.dataset.i,1);save();lists()});
+$('mLists').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.all){copyText(D[b.dataset.all].join('\n'));return}
+ const r=b.closest('.li[data-k]');if(!r)return;const k=r.dataset.k,i=+r.dataset.i,a=b.dataset.a;
+ if(a==='up')moveList(k,i,i-1);else if(a==='dn')moveList(k,i,i+1);else if(a==='cp')copyText(r.querySelector('input').value.trim());else if(a==='del'){D[k].splice(i,1);save();lists()}});
+// touch/mouse drag via pointer events on handle
+(()=>{let drag=null;const M=$('mLists');
+ M.addEventListener('pointerdown',e=>{const h=e.target.closest('.hd');if(!h)return;e.preventDefault();const r=h.closest('.li');drag={r,k:r.dataset.k,from:+r.dataset.i,id:e.pointerId};r.classList.add('drag');try{h.setPointerCapture(e.pointerId)}catch(_){}});
+ M.addEventListener('pointermove',e=>{if(!drag||e.pointerId!==drag.id)return;e.preventDefault();const box=drag.r.parentNode;
+  for(const o of box.children){if(o===drag.r)continue;const b=o.getBoundingClientRect();if(e.clientY>b.top&&e.clientY<b.bottom){const after=e.clientY>b.top+b.height/2;box.insertBefore(drag.r,after?o.nextSibling:o);break}}
+  const sb=M,y=e.clientY;if(y<60)sb.scrollTop-=10;else if(y>innerHeight-60)sb.scrollTop+=10});
+ const end=e=>{if(!drag||e.pointerId!==drag.id)return;const to=[...drag.r.parentNode.children].indexOf(drag.r),{k,from}=drag;drag.r.classList.remove('drag');drag=null;if(to!==from)moveList(k,from,to);else lists()};
+ M.addEventListener('pointerup',end);M.addEventListener('pointercancel',end)})();
+document.querySelectorAll('.cpf').forEach(b=>b.onclick=()=>copyText($(b.dataset.f).value.trim()));
 $('aG').onclick=()=>{addList('genres',$('nG').value);$('nG').value='';save();lists()};$('aW').onclick=()=>{addList('works',$('nW').value);$('nW').value='';save();lists()};$('aS').onclick=()=>{addList('series',$('nS').value);$('nS').value='';save();lists()};
 window.addEventListener('hashchange',hashImport);
 init().catch(e=>{console.error(e);alert('データの読み込みに失敗しました。アプリを開き直してください。')}).then(()=>{render();hashImport();if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{})});

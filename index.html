@@ -25,7 +25,10 @@ h2.g{font-size:14px;color:var(--pd);margin:16px 4px 6px;border-bottom:2px dotted
 .acts{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.acts .btn{flex:1}
 #prev{max-width:100%;max-height:200px;border-radius:12px;margin-top:6px;display:none}
 .empty{text-align:center;color:var(--m);padding:40px 10px}
-.li{display:flex;gap:6px;margin-bottom:6px}.li input{flex:1}
+.li{display:flex;gap:4px;margin-bottom:6px;align-items:center}.li input{flex:1;min-width:0}
+.hd{touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;font-size:20px;padding:8px 6px;color:var(--m);flex:none}.li.drag{opacity:.7;background:#ffe3ee;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,.15)}
+.sb,.cpf{border:1.5px solid #f3c3d6;background:#fff;color:var(--pd);border-radius:10px;padding:6px 8px;font-size:13px;flex:none}.sb:disabled{opacity:.3}.cpf{padding:2px 6px;font-size:12px;margin-left:4px}
+#toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:rgba(74,58,66,.9);color:#fff;padding:8px 18px;border-radius:20px;font-size:14px;z-index:50;opacity:0;pointer-events:none;transition:opacity .2s}#toast.on{opacity:1}
 .tabs{display:flex;gap:6px;overflow-x:auto;white-space:nowrap;margin-bottom:8px;padding-bottom:4px;-webkit-overflow-scrolling:touch;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}
 .tabs button,.chips button{flex:none;border:1.5px solid #f3c3d6;background:#fff;color:var(--pd);border-radius:18px;padding:6px 14px;font-size:14px}
 .tabs button.on{background:var(--pd);color:#fff;border-color:var(--pd)}
@@ -50,9 +53,9 @@ h2.g{font-size:14px;color:var(--pd);margin:16px 4px 6px;border-bottom:2px dotted
 <div class="modal" id="mEdit"><div class="sheet">
 <h3 id="eT">グッズを登録</h3><input type="hidden" id="eId">
 <label>名前 *</label><input id="eName">
-<label>作品名</label><input id="eWork" list="dlW" placeholder="例：〇〇〇（作品タイトル）"><datalist id="dlW"></datalist>
-<label>ジャンル</label><input id="eGenre" list="dlG" placeholder="例：アクスタ"><datalist id="dlG"></datalist>
-<label>シリーズ</label><input id="eSeries" list="dlS" placeholder="例：ポップアップA"><datalist id="dlS"></datalist>
+<label>作品名 <button type="button" class="cpf" data-f="eWork">📋</button></label><input id="eWork" list="dlW" placeholder="例：〇〇〇（作品タイトル）"><datalist id="dlW"></datalist>
+<label>ジャンル <button type="button" class="cpf" data-f="eGenre">📋</button></label><input id="eGenre" list="dlG" placeholder="例：アクスタ"><datalist id="dlG"></datalist>
+<label>シリーズ <button type="button" class="cpf" data-f="eSeries">📋</button></label><input id="eSeries" list="dlS" placeholder="例：ポップアップA"><datalist id="dlS"></datalist>
 <label>サイズ（cm）横 × 縦 × 奥行き</label><div class="row"><input id="eW" type="number" step="0.1" inputmode="decimal" placeholder="横">×<input id="eH" type="number" step="0.1" inputmode="decimal" placeholder="縦">×<input id="eD" type="number" step="0.1" inputmode="decimal" placeholder="奥(任意)"></div>
 <label>個数</label><div class="row"><button class="btn g" type="button" id="qm">−</button><input id="eQty" type="number" min="0" value="1" inputmode="numeric" style="text-align:center"><button class="btn g" type="button" id="qp">＋</button></div>
 <label>価格（円）</label><div class="row"><input id="ePrice" type="number" min="0" inputmode="numeric" placeholder="例：1650"><label class="chk" style="margin:0;flex:none"><input type="checkbox" id="eNfs">非売品</label></div>
@@ -74,9 +77,9 @@ h2.g{font-size:14px;color:var(--pd);margin:16px 4px 6px;border-bottom:2px dotted
 <div class="modal" id="mConf"><div class="sheet"><h3>この内容で追加しますか？</h3><div id="cList"></div>
 <div class="acts"><button class="btn g" id="cC">やめる</button><button class="btn" id="cOK">追加する</button></div></div></div>
 <div class="modal" id="mLists"><div class="sheet"><h3>ジャンル・シリーズ</h3>
-<label>ジャンル</label><div id="lG"></div><div class="li"><input id="nG" placeholder="追加"><button class="btn" id="aG">＋</button></div>
-<label>作品名</label><div id="lW"></div><div class="li"><input id="nW" placeholder="追加"><button class="btn" id="aW">＋</button></div>
-<label>シリーズ</label><div id="lS"></div><div class="li"><input id="nS" placeholder="追加"><button class="btn" id="aS">＋</button></div>
+<label>ジャンル <button class="sb" data-all="genres">まとめてコピー</button></label><div id="lG"></div><div class="li"><input id="nG" placeholder="追加"><button class="btn" id="aG">＋</button></div>
+<label>作品名 <button class="sb" data-all="works">まとめてコピー</button></label><div id="lW"></div><div class="li"><input id="nW" placeholder="追加"><button class="btn" id="aW">＋</button></div>
+<label>シリーズ <button class="sb" data-all="series">まとめてコピー</button></label><div id="lS"></div><div class="li"><input id="nS" placeholder="追加"><button class="btn" id="aS">＋</button></div>
 <div class="acts"><button class="btn" id="lC">閉じる</button></div></div></div>
 <div class="bbar"><button class="btn g" id="bkAll">全選択</button><button class="btn" id="bkEdit">一括編集</button><button class="btn r" id="bkDel">削除</button><button class="btn g" id="bkEnd">終了</button></div>
 <div class="modal" id="mBulk"><div class="sheet"><h3 id="bkT">一括編集</h3>
@@ -92,4 +95,5 @@ h2.g{font-size:14px;color:var(--pd);margin:16px 4px 6px;border-bottom:2px dotted
 <div class="bf" data-f="url"><label class="chk"><input type="checkbox" class="en">URL</label><input class="v" id="bUrl" type="url"></div>
 <div class="bf" data-f="memo"><label class="chk"><input type="checkbox" class="en">メモ</label><textarea class="v" id="bMemo" rows="2"></textarea></div>
 <div class="acts"><button class="btn g" id="bkC">キャンセル</button><button class="btn" id="bkOK">適用</button></div></div></div>
-<script src="app.js?v=7"></script></body></html>
+<div id="toast"></div>
+<script src="app.js?v=8"></script></body></html>

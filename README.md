@@ -39,3 +39,4 @@ base64url生成例 (Python): `base64.urlsafe_b64encode(json.dumps(items,ensure_a
 - 一括編集の画像は1枚だけ `photos`（id→画像）に保存し、各アイテムは `photoRef` で参照（容量節約）。個別の `photo` も従来どおり有効。
 - 保存先: IndexedDB `oshiGoods`（`kv`ストアの `data` にアイテム・各リスト、`photos` ストアに画像 dataURL）。初回起動時に旧 localStorage `oshiGoods.v1` から自動移行し、件数・写真数を検証してから旧データを削除（`oshiGoods.migrated`=1）。画像は全て `photoRef` 参照（同一画像は自動で1枚に統合）。表示設定は localStorage `oshiGoods.ui`。
 - バックアップJSONは従来どおり `{items,genres,series,works,photos}`。古い形式（items内 `photo`）も復元可。
+- ジャンル・作品名・シリーズの並び順は編集画面（☰ドラッグ / ↑↓）で変更でき、タブ・絞り込み・入力候補・グループ表示の順に反映。📋で名前コピー、「まとめてコピー」で1行1件。
